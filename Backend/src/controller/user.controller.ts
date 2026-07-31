@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import { User } from "../models/user.model.ts";
-import { generateToken } from "../utils/jwt.ts";
-import { after } from "node:test";
+import { generateToken, verifyToken } from "../utils/jwt.ts";
+import { SendEmail } from "../utils/mail.ts";
+import { send } from "node:process";
 
 export async function getAllUsers(req: Request, res: Response) {
   try {
@@ -14,32 +15,82 @@ export async function getAllUsers(req: Request, res: Response) {
   }
 }
 
+// fix bug when we regitser user it create document in mongodb but not handle verfication 
+// verify email token bug relted to verify
 export async function registerUser(req: Request, res: Response) {
-  try {
-    const { userName, email, password } = req.body;
+  const { userName, email, password } = req.body;
 
-    if (!userName || !email || !password) {
-      res.status(401).json({ message: "all field are requierd" });
-    }
+  if (!userName || !email || !password) {
+    return res.status(401).json({ message: "all field are requierd" });
+  }
+  try {
     const newUser = await User.create({
       userName,
       email,
       password,
+      isVerified: false,
     });
 
+    const verificationToken = generateToken({
+      userId: newUser?.id as string,
+      email: newUser?.email as string,
+    });
+    console.log("Token genereted", verificationToken)
+    const verificationUrl = `${process.env.APP_URL}/api/user/verify?token=${verificationToken}`;
+
+    const toEmail = newUser.email
+    console.log("to email", email)
+
+    await SendEmail({
+      to: toEmail,
+      subject: "Verify Your Email Address",
+      html: `
+        <h2>Welcome to Our App!</h2>
+        <p>Please click the button below to verify your email address:</p>
+        <a href="${verificationUrl}" style="background:#007bff;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;display:inline-block;">Verify Email</a>
+        <p>This link will expire in 1 hour.</p>
+      `,
+    });
     res.status(200).json({
       success: true,
-      message: "user register successfully",
+      message: "Verification email sent successfully!",
       data: newUser,
     });
   } catch (error) {
-    console.error("Login Error:", error);
+    console.error("Register/Email Error:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
     });
   }
 }
+
+export async function verifyEmail(req: Request, res: Response): Promise<any> {
+  const { token  } = req.query;
+
+  if (typeof token !== "string" || token.trim() === "") {
+    return res.status(400).json({ message: "Invalid or missing token" });
+  }
+  try {
+    const decodedToken = verifyToken(token);
+    const email = decodedToken.email;
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    user.isVerified = true;
+    await user.save();
+
+    return res.status(200).send(`
+      <h1>Email Verified Successfully!</h1>
+      <p>Your email (${email}) has been confirmed. You can now log into your account.</p>
+    `);
+  } catch (error) {
+    return res.status(400).json({ message: 'Token has expired or is invalid.' });
+  }
+}
+
+// not verify not attempt to login logic 
 
 export async function loginUser(req: Request, res: Response) {
   try {
@@ -74,7 +125,7 @@ export async function loginUser(req: Request, res: Response) {
 
     return res.status(200).json({ message: "Login successful!", data: user });
   } catch (error) {
-    console.error("Register Error:", error);
+    console.error("login Error:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -138,17 +189,15 @@ export async function updateUser(req: Request, res: Response) {
     }
 
     const updatedUser = await User.findOneAndUpdate(
-      {_id: user!.id},
+      { _id: user!.id },
       { $set: { email: newEmail, userName: newUsername } },
-      {returnOriginal: false }
+      { returnOriginal: false },
     ).lean();
-    return res
-      .status(200)
-      .json({
-        success: true,
-        message: "Email updated successfully",
-        data: updatedUser,
-      });
+    return res.status(200).json({
+      success: true,
+      message: "Email updated successfully",
+      data: updatedUser,
+    });
   } catch (error) {
     console.error("email update Error:", error);
     return res.status(500).json({

@@ -1,4 +1,4 @@
-import mongoose, { Model, Schema, Types, Document } from "mongoose";
+import mongoose, { Model, Schema, Types, Document, BooleanSchemaDefinition } from "mongoose";
 import bcrypt from "bcrypt";
 
 export interface IUser {
@@ -6,6 +6,7 @@ export interface IUser {
   userName: string;
   email: string;
   password: string;
+  isVerified: boolean
 }
 
 export interface IUserMethods {
@@ -31,6 +32,9 @@ const userSchema = new Schema<IUser, {}, IUserMethods>(
       type: String,
       required: true,
     },
+    isVerified: {
+      type: Boolean,
+    }
   },
   { timestamps: true },
 );
