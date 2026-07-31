@@ -1,7 +1,18 @@
 import { Request, Response } from "express";
 import { User } from "../models/user.model.ts";
 import { generateToken } from "../utils/jwt.ts";
-import strict from "node:assert/strict";
+import { after } from "node:test";
+
+export async function getAllUsers(req: Request, res: Response) {
+  try {
+    const users = await User.find({});
+    return res
+      .status(200)
+      .json({ message: "all users fetched succesfully", users });
+  } catch (error) {
+    console.error("Error fetching users:", error);
+  }
+}
 
 export async function registerUser(req: Request, res: Response) {
   try {
@@ -106,13 +117,43 @@ export async function logoutUser(req: Request, res: Response) {
   }
 }
 
-export async function getAllUsers(req: Request, res: Response) {
+export async function updateUser(req: Request, res: Response) {
   try {
-    const users = await User.find({});
+    const { email, newUsername, newEmail, password } = req.body;
+    if (!email || !password) {
+      res.status(401).json({
+        message: "old email and password required for update account",
+      });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      res.status(401).json({ message: "user not found" });
+    }
+
+    const isPasswordCorrect: boolean = await user!.comparePassword(password);
+
+    if (!isPasswordCorrect) {
+      return res.status(401).json({ message: "Invalid password" });
+    }
+
+    const updatedUser = await User.findOneAndUpdate(
+      {_id: user!.id},
+      { $set: { email: newEmail, userName: newUsername } },
+      {returnOriginal: false }
+    ).lean();
     return res
       .status(200)
-      .json({ message: "all users fetched succesfully", users });
+      .json({
+        success: true,
+        message: "Email updated successfully",
+        data: updatedUser,
+      });
   } catch (error) {
-    console.error("Error fetching users:", error);
+    console.error("email update Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
   }
 }
