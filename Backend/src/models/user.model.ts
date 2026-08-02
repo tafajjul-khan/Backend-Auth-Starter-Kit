@@ -1,12 +1,19 @@
-import mongoose, { Model, Schema, Types, Document, BooleanSchemaDefinition } from "mongoose";
+import mongoose, {
+  Model,
+  Schema,
+  Types,
+  Document,
+  BooleanSchemaDefinition,
+} from "mongoose";
 import bcrypt from "bcrypt";
 
 export interface IUser {
-  userId: Types.ObjectId
+  userId: Types.ObjectId;
   userName: string;
   email: string;
   password: string;
-  isVerified: boolean
+  isVerified: boolean;
+  unverifiedEmail?: string | null;
 }
 
 export interface IUserMethods {
@@ -20,6 +27,7 @@ const userSchema = new Schema<IUser, {}, IUserMethods>(
       type: String,
       required: true,
       unique: true,
+      lowercase: true,
       trim: true,
     },
     email: {
@@ -32,9 +40,16 @@ const userSchema = new Schema<IUser, {}, IUserMethods>(
       type: String,
       required: true,
     },
+    unverifiedEmail: {
+      type: String,
+      default: null,
+      lowercase: true,
+      trim: true,
+    },
     isVerified: {
       type: Boolean,
-    }
+      default: false,
+    },
   },
   { timestamps: true },
 );

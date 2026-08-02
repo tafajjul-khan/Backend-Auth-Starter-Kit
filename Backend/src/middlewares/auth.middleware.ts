@@ -1,6 +1,9 @@
 import { Request, Response, NextFunction } from "express";
 import { UserTokenPayload, verifyToken } from "../utils/jwt.ts";
 
+
+const JWT_SECRET = process.env.JWT_SECRET || "tasdssdsadasdadadadadad";
+
 export interface AuthenticateedRequest extends Request {
   user?: UserTokenPayload;
 }
@@ -22,7 +25,7 @@ export const authenticateJwt = (
   const token = authheader.split(' ')[1] as string;
   // console.log("token", token)
   try {
-    const decodePayload = verifyToken(token);
+    const decodePayload = verifyToken(token, JWT_SECRET as string);
     req.user = decodePayload;
     next();
   } catch (error) {

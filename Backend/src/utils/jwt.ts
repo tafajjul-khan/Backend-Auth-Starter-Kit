@@ -1,19 +1,33 @@
-import jwt, { JwtPayload } from "jsonwebtoken";
+import jwt, { JwtPayload, SignOptions } from "jsonwebtoken";
+
+const JWT_SECRET = process.env.JWT_SECRET
 
 export interface UserTokenPayload extends JwtPayload {
-  userId: string;
+  userId: string ;
   email: string;
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || "fallback_super_secret_key";
 
-export const generateToken = (payload: UserTokenPayload): string => {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "1h" });
+// export const generateToken = (payload: UserTokenPayload, secret: string ,expiresIn: SignOptions['expiresIn']): string => {
+//   return jwt.sign(payload, secret, {expiresIn});
+// };
+
+
+
+export const generateToken = (
+  payload: UserTokenPayload, 
+  secret: string, 
+  expiresIn: SignOptions["expiresIn"]
+): string => {
+  return jwt.sign(payload, secret, {
+    ...(expiresIn !== undefined && { expiresIn })
+  });
 };
 
-export const verifyToken = (token: string): UserTokenPayload => {
+
+export const verifyToken = (token: string, secret: string): UserTokenPayload => {
   try {
-    const decode = jwt.verify(token, JWT_SECRET) as UserTokenPayload;
+    const decode = jwt.verify(token, secret) as UserTokenPayload;
     return decode;
   } catch (error) {
     throw new Error("Invalid or expired token");
