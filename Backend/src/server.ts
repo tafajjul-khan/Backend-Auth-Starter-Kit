@@ -9,7 +9,9 @@ dotenv.config()
 const port: number = 3000;
 const app: Application = express();
 app.use(express.json());
+app.use(express.urlencoded({extended: true}))
 app.use(cookieparser())
+
 app.use("/api/user", userRouter)
 
 app.get("/", (req: Request, res: Response) => {

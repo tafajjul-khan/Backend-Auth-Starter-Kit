@@ -1,24 +1,8 @@
-import mongoose, {
-  Model,
-  Schema,
-  Types,
-  Document,
-  BooleanSchemaDefinition,
-} from "mongoose";
+import mongoose, { Model, model, Schema, Types, Document } from "mongoose";
+import { IUser,IRefreshToken,IUserMethods } from "../interfaces/user.interfaces.ts";
 import bcrypt from "bcrypt";
 
-export interface IUser {
-  userId: Types.ObjectId;
-  userName: string;
-  email: string;
-  password: string;
-  isVerified: boolean;
-  unverifiedEmail?: string | null;
-}
 
-export interface IUserMethods {
-  comparePassword(candidatePassword: string): Promise<boolean>;
-}
 type UserDocument = Document & IUser & IUserMethods;
 
 const userSchema = new Schema<IUser, {}, IUserMethods>(
@@ -40,12 +24,6 @@ const userSchema = new Schema<IUser, {}, IUserMethods>(
       type: String,
       required: true,
     },
-    unverifiedEmail: {
-      type: String,
-      default: null,
-      lowercase: true,
-      trim: true,
-    },
     isVerified: {
       type: Boolean,
       default: false,
@@ -53,6 +31,15 @@ const userSchema = new Schema<IUser, {}, IUserMethods>(
   },
   { timestamps: true },
 );
+
+const refreshTokenSchema = new Schema<IRefreshToken>({
+  token: { type: String, requierd: true, unique: true },
+  userId: { type: Schema.Types.ObjectId, ref: "User", requierd: true },
+  expiresAt: { type: Date, requierd: true },
+});
+
+
+refreshTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 userSchema.pre("save", async function (this: UserDocument) {
   if (!this.isModified("password")) {
@@ -77,7 +64,13 @@ userSchema.methods.comparePassword = async function (
 
   return bcrypt.compare(candidatePassword, this.password);
 };
-export const User = mongoose.model<IUser, Model<IUser, {}, IUserMethods>>(
+
+export const User = model<IUser, Model<IUser, {}, IUserMethods>>(
   "User",
   userSchema,
+);
+
+export const RefreshToken = model<IRefreshToken>(
+  "RefreshToken",
+  refreshTokenSchema,
 );

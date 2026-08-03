@@ -1,8 +1,12 @@
 import { Request, Response } from "express";
-import { User } from "../models/user.model.ts";
-import { generateToken, verifyToken } from "../utils/jwt.ts";
+import { RefreshToken, User } from "../models/user.model.ts";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  generateTokenForEmail,
+  verifyEmailVerficationToken,
+} from "../utils/jwt.ts";
 import { sendVerificationEmail } from "../utils/email.ts";
-const JWT_SECRET = process.env.JWT_SECRET || "tasdssdsadasdadadadadad";
 
 export async function getAllUsers(req: Request, res: Response) {
   try {
@@ -16,6 +20,7 @@ export async function getAllUsers(req: Request, res: Response) {
 }
 
 export async function requestVerification(req: Request, res: Response) {
+  console.log("request body: ", req.body);
   // get email
   const { email } = req.body;
   // console.log("new Email: ", newEmail)
@@ -32,20 +37,24 @@ export async function requestVerification(req: Request, res: Response) {
       email: user!.email as string,
     };
     // console.log("email token payload: ", payload)
-    const token = generateToken(payload, JWT_SECRET as string, "24h");
+    const token = generateTokenForEmail(
+      payload,
+      process.env.ACCESS_TOKEN_SECRET as string,
+      "24h",
+    );
     // console.log("email token: ", token)
 
     // get targeted email from newEmail user and loggedInUser from user id
-    const targetEmail = user.email
-    console.log("targeted email: ", targetEmail)
+    const targetEmail = user.email;
+    console.log("targeted email: ", targetEmail);
 
     // send email to targeted user
     try {
       await sendVerificationEmail(targetEmail, token);
     } catch (error) {
-      console.log("send verififcation error: ", error)
+      console.log("send verififcation error: ", error);
     }
-    
+
     // send response
     res.status(200).json({
       success: true,
@@ -57,13 +66,16 @@ export async function requestVerification(req: Request, res: Response) {
   }
 }
 
-export async function verifyEmail(req: Request, res: Response): Promise<any> {
+export async function verifyEmail(req: Request, res: Response) {
   const { token } = req.query;
 
   if (typeof token !== "string" || token.trim() === "") {
     return res.status(400).json({ message: "Invalid or missing token" });
   }
-  const decodedToken = verifyToken(token, JWT_SECRET as string);
+  const decodedToken = verifyEmailVerficationToken(
+    token,
+    process.env.ACCESS_TOKEN_SECRET as string,
+  );
   const email = decodedToken.email;
   try {
     const user = await User.findOne({ email });
@@ -116,7 +128,7 @@ export async function registerUser(req: Request, res: Response) {
       data: newUser,
     });
   } catch (error) {
-    console.error("Register/Email Error:", error);
+    console.error("Verfiy Email Error:", error);
     return res.status(500).json({
       success: false,
       message: "Internal server error",
@@ -139,32 +151,39 @@ export async function loginUser(req: Request, res: Response) {
       res.status(401).json({ message: "user not found" });
     }
     // if user compare password with user give password with db password
-    const isPasswordCorrect: boolean = await user!.comparePassword(password);
+    const isPasswordCorrect = await user!.comparePassword(password);
     // if password correct then check isEmailverified if false then
 
     if (!isPasswordCorrect) {
       return res.status(401).json({ message: "Invalid Password" });
     }
 
-    // generate session token
-    const payload = {
+    // generate aceess and refresh token
+    const accessTokenPayload = {
       userId: user!.id as string,
       email: user!.email as string,
     };
-    const token = generateToken(payload, JWT_SECRET as string, "1h");
-    // res.send login successfully and send verify you email
-    // if user wants then call verify email function
+    const accessToken = generateAccessToken(accessTokenPayload);
+
+    const { token, expiresAt } = generateRefreshToken();
+    await RefreshToken.findOneAndUpdate(
+      { userId: user!._id },
+      { token, expiresAt },
+      { upsert: true, returnDocument: "after", },
+    );
 
     // send session cookies to frontend
-    res.cookie("session_token", token, {
+    res.cookie("refreshToken", token, {
       httpOnly: true,
       secure: true,
       sameSite: "strict",
-      maxAge: 60 * 60 * 1000,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 15 days
     });
 
     // send response with data
-    return res.status(200).json({ message: "Login successful!", data: user });
+    return res
+      .status(200)
+      .json({ message: "Login successful!", data: user, accessToken });
   } catch (error) {
     console.error("Login Error:", error);
     return res.status(500).json({
@@ -174,29 +193,90 @@ export async function loginUser(req: Request, res: Response) {
   }
 }
 
-export async function logoutUser(req: Request, res: Response) {
-  // get email or password
-  const { email, password } = req.body;
+export async function generateRefreshAndAccessTokens(
+  req: Request,
+  res: Response,
+) {
+  // get refrsh token from cookies
+  const incomingRefreshToken = req.cookies.refreshToken;
+  // cehck refresh token
+  if (!incomingRefreshToken) {
+    return res.status(401).json({ message: "Refresh token is missing" });
+  }
 
-  // check it if not send all field are required
-  if (!email || !password) {
-    res.status(401).json({ message: "Email and Password is requierd" });
+  try {
+    // check refresh token in db
+    const storedRefreshToken = await RefreshToken.findOne({
+      token: incomingRefreshToken,
+    });
+    // if token not valid res.send invalid token
+    if (!storedRefreshToken) {
+      return res.status(403).json({ message: "Invalid refresh token" });
+    }
+
+    // check token expiry
+    if (new Date() > storedRefreshToken.expiresAt) {
+      await storedRefreshToken.deleteOne();
+      return res.status(403).json({ message: "Expired refresh token" });
+    }
+
+    // dlt old refresh token
+    await storedRefreshToken.deleteOne();
+
+    const user = await User.findById(storedRefreshToken.userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // access toekn payload
+    const accessTokenPayload = {
+      userId: user.id as string,
+      email: user.email as string,
+    };
+
+    // Generate a brand new pair
+    const accessToken = generateAccessToken(accessTokenPayload);
+    const { token: newRefreshToken, expiresAt } = generateRefreshToken();
+
+    // Save new refresh token to DB
+    await RefreshToken.create({
+      token: newRefreshToken,
+      userId: storedRefreshToken.userId,
+      expiresAt,
+    });
+
+    // 4. Send new refresh token back in the cookie
+    res.cookie("refreshToken", newRefreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // days
+    });
+
+    return res
+      .status(200)
+      .json({ message: "Access Token generate successfully!", accessToken });
+  } catch (error) {
+    console.error("generate refresh and access token Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+}
+
+export async function logoutUser(req: Request, res: Response) {
+  // check refresh token
+  const incomingRefreshToken = req.cookies.refreshToken;
+  // if invalid refresh token
+  if (!incomingRefreshToken) {
+    res.status(401).json({ message: "refresh token not valid" });
   }
   try {
-    // find user and check it
-    const user = await User.findOne({ email });
-    // if user not exists send "user not found/exists"
-    if (!user) {
-      res.status(401).json({ message: "User not found" });
-    }
-    // compare password
-    const isPasswordCorrect: boolean = await user!.comparePassword(password);
-    // if not correct send "Password not correct"
-    if (!isPasswordCorrect) {
-      return res.status(401).json({ message: "Invalid Password" });
-    }
-    // if user credentials true then clear cookie session
-    res.clearCookie("session_token", {
+    await RefreshToken.deleteOne({ token: incomingRefreshToken });
+
+    res.clearCookie("refreshToken", {
       path: "/",
       // domain: "domainname"
       httpOnly: true,
@@ -215,7 +295,7 @@ export async function logoutUser(req: Request, res: Response) {
 
 export async function updateUser(req: Request, res: Response) {
   // get user email with new email and new username ,password
-  const { email, newEmail, newUsername, password } = req.body;
+  const { email, newEmail, newUserName, password } = req.body;
 
   // if not email password send email and password requierd
   if (!email || !password) {
@@ -226,20 +306,21 @@ export async function updateUser(req: Request, res: Response) {
 
   try {
     // find user with email
-    const user = await User.findOne({ email });
-
+    const user = await User.findOne({ email: email });
+    console.log("User: ", user);
     // if user not with email then send user not found
     if (!user) {
       res.status(401).json({ message: "User not found" });
     }
 
     // compare password
-    const isPasswordCorrect: boolean = await user!.comparePassword(password);
-    // if password is not correct then send Invalid password
+    const isPasswordCorrect = await user!.comparePassword(password);
+    // if password correct then check
 
     if (!isPasswordCorrect) {
       return res.status(401).json({ message: "Invalid Password" });
     }
+
     // if password and email corect then update what info user wants to update
     // if user wants update email then upload image in cloudinary first
     // if cloudinary upload images successfully then send res
@@ -247,7 +328,7 @@ export async function updateUser(req: Request, res: Response) {
 
     const updatedUser = await User.findOneAndUpdate(
       { _id: user!.id },
-      { $set: { email: newEmail, userName: newUsername } },
+      { $set: { email: newEmail, userName: newUserName } },
       { returnDocument: "after", runValidators: true },
     ).lean();
 

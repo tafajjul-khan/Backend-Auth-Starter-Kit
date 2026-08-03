@@ -8,22 +8,22 @@ import {
   deleteUser,
   verifyEmail,
   requestVerification,
+  generateRefreshAndAccessTokens,
 } from "../controller/user.controller.ts";
 import {
-  authenticateJwt,
-  AuthenticateedRequest,
+  validateAccessToken,
 } from "../middlewares/auth.middleware.ts";
 
 export const userRouter: Router = express.Router();
 
 userRouter.post("/", registerUser);
 userRouter.post("/login", loginUser);
+userRouter.post("/refresh", generateRefreshAndAccessTokens);
 userRouter.post("/logout", logoutUser);
-userRouter.get("/all", authenticateJwt, getAllUsers);
-userRouter.put("/acoountupdate", updateUser);
-userRouter.delete("/:id", authenticateJwt, deleteUser);
-userRouter.post("/email-verification", authenticateJwt, requestVerification);
+userRouter.get("/all", validateAccessToken, getAllUsers);
+userRouter.put("/accountupdate", updateUser);
+userRouter.delete("/:id", validateAccessToken, deleteUser);
+userRouter.post("/email-verification", validateAccessToken, requestVerification);
 userRouter.get("/verify-email", verifyEmail);
 
-// same email old and new
-// username if tafajjul khan 123 __ like handle it
+

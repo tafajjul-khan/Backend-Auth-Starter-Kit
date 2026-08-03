@@ -1,34 +1,53 @@
 import { Request, Response, NextFunction } from "express";
-import { UserTokenPayload, verifyToken } from "../utils/jwt.ts";
+import jwt from "jsonwebtoken";
+import { IAccessTokenPayload } from "../interfaces/user.interfaces.ts";
 
+// const ACCESS_TOKEN_SECRET =
+const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET as string;
 
-const JWT_SECRET = process.env.JWT_SECRET || "tasdssdsadasdadadadadad";
-
-export interface AuthenticateedRequest extends Request {
-  user?: UserTokenPayload;
+// Extend Express Request interface to include user information
+export interface AuthenticatedRequest extends Request {
+  user?: IAccessTokenPayload;
 }
 
-export const authenticateJwt = (
-  req: AuthenticateedRequest,
+export const validateAccessToken = (
+  req: AuthenticatedRequest,
   res: Response,
   next: NextFunction,
 ): void => {
-  const authheader = req.headers.authorization;
-  // console.log("auth header", authheader)
-  if (!authheader || !authheader.startsWith('Bearer ')) {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
     res.status(401).json({
-      message: "Authorization token missing or malfromed",
+      success: false,
+      message: "Access denied. No token provided.",
     });
     return;
   }
+  // console.log("auth header: ", authHeader);
+  const token = authHeader.split(" ")[1]; // Extract token from "Bearer <token>"
+  // console.log("Token: ", token);
 
-  const token = authheader.split(' ')[1] as string;
-  // console.log("token", token)
   try {
-    const decodePayload = verifyToken(token, JWT_SECRET as string);
-    req.user = decodePayload;
+    const decode = jwt.verify(token as string, ACCESS_TOKEN_SECRET);
+    req.user = decode as IAccessTokenPayload;
+
     next();
   } catch (error) {
-    res.status(403).json({ message: "Forbidden: Access denied" });
+    // JWT Expiration handler
+    if (error instanceof jwt.TokenExpiredError) {
+      res.status(401).json({
+        success: false,
+        message: "Access token has expired.",
+      });
+      return;
+    }
+
+    // Invalid Token handler
+    res.status(403).json({
+      success: false,
+      message: "Invalid access token.",
+    });
+    return;
   }
 };
