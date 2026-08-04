@@ -29,9 +29,11 @@ export const validateAccessToken = (
   // console.log("Token: ", token);
 
   try {
-    const decode = jwt.verify(token as string, ACCESS_TOKEN_SECRET);
-    req.user = decode as IAccessTokenPayload;
-
+    const decode = jwt.verify(
+      token as string,
+      ACCESS_TOKEN_SECRET,
+    ) as IAccessTokenPayload;
+    req.user = { id: decode.id, email: decode.email };
     next();
   } catch (error) {
     // JWT Expiration handler

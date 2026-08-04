@@ -1,7 +1,10 @@
 import mongoose, { Model, model, Schema, Types, Document } from "mongoose";
-import { IUser,IRefreshToken,IUserMethods } from "../interfaces/user.interfaces.ts";
+import {
+  IUser,
+  IRefreshToken,
+  IUserMethods,
+} from "../interfaces/user.interfaces.ts";
 import bcrypt from "bcrypt";
-
 
 type UserDocument = Document & IUser & IUserMethods;
 
@@ -17,6 +20,7 @@ const userSchema = new Schema<IUser, {}, IUserMethods>(
     email: {
       type: String,
       required: true,
+      trim: true,
       unique: true,
       lowercase: true,
     },
@@ -28,6 +32,30 @@ const userSchema = new Schema<IUser, {}, IUserMethods>(
       type: Boolean,
       default: false,
     },
+    profile: {
+      firstName: {
+        type: String,
+        lowercase: true,
+        trim: true,
+        default: " ",
+      },
+      lastName: {
+        type: String,
+        lowercase: true,
+        trim: true,
+        default: " ",
+      },
+      dateOfBirth: {
+        type: Date,
+      },
+      avatar: {
+        type: String,
+        default: "default-avatar.png",
+      },
+      cloudinaryPublicId: {
+        type: String,
+      },
+    },
   },
   { timestamps: true },
 );
@@ -35,9 +63,8 @@ const userSchema = new Schema<IUser, {}, IUserMethods>(
 const refreshTokenSchema = new Schema<IRefreshToken>({
   token: { type: String, requierd: true, unique: true },
   userId: { type: Schema.Types.ObjectId, ref: "User", requierd: true },
-  expiresAt: { type: Date, requierd: true },
+  expiresAt: { type: Date, required: true },
 });
-
 
 refreshTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 

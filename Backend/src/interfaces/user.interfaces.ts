@@ -1,12 +1,23 @@
 import { Types } from "mongoose";
 import { JwtPayload } from "jsonwebtoken";
 
+interface IProfile {
+  firstName: string;
+  lastName: string;
+  dateOfBirth: Date | null;
+  bio: string;
+  avatar: string;
+  cloudinaryPublicId: string;
+}
+
 export interface IUser {
-  userId: Types.ObjectId;
   userName: string;
   email: string;
   password: string;
+  profile: IProfile;
   isVerified: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface IRefreshToken extends Document {
@@ -20,16 +31,11 @@ export interface IUserMethods {
 }
 
 export interface IAccessTokenPayload extends JwtPayload {
-  userId: string ;
+  id: string;
   email: string;
 }
 
 export interface IEmailTokenPayload extends JwtPayload {
-  userId: string ;
+  userId: string;
   email: string;
 }
-
-
-
-
-
