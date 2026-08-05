@@ -1,8 +1,9 @@
 import { Request, Response } from "express";
-import { User } from "../models/user.model.ts";
+import { RefreshToken, User } from "../models/user.model.ts";
+import { IAccountRequest } from "../interfaces/user.interfaces.ts";
 
 export async function getAllProfile(req: Request, res: Response) {
-  console.log("req", req);
+  // console.log("req", req);
   try {
     const users = await User.find({}).select("-password");
     return res
@@ -14,42 +15,35 @@ export async function getAllProfile(req: Request, res: Response) {
   }
 }
 
-export interface ICustomRequest extends Request {
-  user?: {
-    id: string;
-    email?: string;
-  };
-}
-
-export async function SaveOrUpdateProfile(req: ICustomRequest, res: Response) {
+export async function SaveOrUpdateProfile(req: IAccountRequest, res: Response) {
   // get user firstName,lastName,bio,avatar,dateOfBirth
-  const { firstName, lastName, dateOfBirth, avatar } = req.body;
-  const userId = req.user?.id;
-  console.log("user id: ", userId)
+  const { firstName, lastName, DOB, avatar } = req.body;
+  const userId = req.user?.userId;
+  console.log("user id: ", userId);
   // save in upadte user db with fields
   // send res
 
   try {
-    const updateUserField = await User.findByIdAndUpdate(
+    const updatedUserField = await User.findByIdAndUpdate(
       userId,
       {
         $set: {
-          "profile.firstName": firstName,
-          "profile.lastName": lastName,
-          "profile.dateOfBirth": dateOfBirth ? new Date(dateOfBirth) : null,
-          "profile.avatar": avatar,
+          "account.fullName.firstName": firstName,
+          "account.fullName.lastName": lastName,
+          "account.DOB": DOB ? new Date(DOB) : null,
+          "account.avatar": avatar,
         },
       },
       { returnDocument: "after", runValidators: true },
     ).select("-password");
 
-    if (!updateUserField)
+    if (!updatedUserField)
       return res.status(404).json({ message: "User not found" });
 
     return res.status(200).json({
       success: true,
       message: "Account save and update successfully",
-      data: updateUserField,
+      data: updatedUserField,
     });
   } catch (error) {
     console.error("Profile save and update Error:", error);
@@ -62,18 +56,20 @@ export async function SaveOrUpdateProfile(req: ICustomRequest, res: Response) {
 
 export async function deleteProfile(req: Request, res: Response) {
   // get user id in params
-  const { id } = req.params;
+  const { userId } = req.params;
   // console.log("user id: ", id);
   try {
     // find user by id
-    const deletedUser = await User.findByIdAndDelete(id);
+    await RefreshToken.deleteMany({ user: userId });
+    const deletedUser = await User.findByIdAndDelete(userId);
 
     // if not user by id send user not found by id
     if (!deletedUser) {
       // if user not found then send  "Soft Delete Failed: User not found"
-      return res
-        .status(404)
-        .json({ message: "Soft Delete Failed: User not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Soft Delete Failed: User not found",
+      });
     }
 
     // finally user found then send res("user deleted successfully")

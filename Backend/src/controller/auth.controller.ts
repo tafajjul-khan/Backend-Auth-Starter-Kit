@@ -7,19 +7,22 @@ import {
   verifyEmailVerficationToken,
 } from "../utils/jwt.ts";
 import { sendVerificationEmail } from "../utils/email.ts";
+import { IAuthRequest } from "../interfaces/user.interfaces.ts";
 
-export async function requestVerification(req: Request, res: Response) {
-  console.log("request body: ", req.body);
-  // get email
+export async function requestVerification(req: IAuthRequest, res: Response) {
+  // console.log("request body: ", req.body);
+  // get email req.body
   const { email } = req.body;
   // console.log("new Email: ", newEmail)
-  // get user id if login
   try {
+    // get user id if login
     const user = await User.findOne({ email: email });
 
+    // check user
     if (!user) {
       return res.status(404).json({ message: "User not Found" });
     }
+
     // generate token for send email
     const payload = {
       userId: user!.id as string,
@@ -55,7 +58,7 @@ export async function requestVerification(req: Request, res: Response) {
   }
 }
 
-export async function verifyEmail(req: Request, res: Response) {
+export async function verifyEmail(req: IAuthRequest, res: Response) {
   const { token } = req.query;
 
   if (typeof token !== "string" || token.trim() === "") {
@@ -82,7 +85,7 @@ export async function verifyEmail(req: Request, res: Response) {
   }
 }
 
-export async function registerUser(req: Request, res: Response) {
+export async function registerUser(req: IAuthRequest, res: Response) {
   // upload avtar and profile pic in cloudinary
   // if fail not upload any data and res.send("avtar/profile not uploaded")
   // after completing image upload create user with isEmailVerified false
@@ -124,32 +127,38 @@ export async function registerUser(req: Request, res: Response) {
   }
 }
 
-export async function loginUser(req: Request, res: Response) {
+export async function loginUser(req: IAuthRequest, res: Response) {
   // get email,username,password
-  const { email, password } = req.body;
+  const { email, userName, password } = req.body;
   // check it if not include email or username and password then res.send("All fields are requierd")
-  if (!email || !password) {
-    res.status(401).json({ message: "Email and password is requierd" });
+  if (!email || !userName || !password) {
+    res
+      .status(401)
+      .json({ message: "Email or User name and password is requierd" });
   }
   try {
     // find user with email and username
-    const user = await User.findOne({ email });
+    const user = await User.findOne({
+      $or: [{ email: email }, { userName: userName }],
+    });
     // if  user not exists then res.send("User not found")
     if (!user) {
-      res.status(401).json({ message: "user not found" });
+      res.status(401).json({ success: false, message: "user not found" });
     }
     // if user compare password with user give password with db password
     const isPasswordCorrect = await user!.comparePassword(password);
     // if password correct then check isEmailverified if false then
 
     if (!isPasswordCorrect) {
-      return res.status(401).json({ message: "Invalid Password" });
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid Password" });
     }
 
     // generate aceess and refresh token
     const accessTokenPayload = {
-      userId: user!.id as string,
-      email: user!.email as string,
+      userId: user!._id,
+      email: user!.email,
     };
     const accessToken = generateAccessToken(accessTokenPayload);
 
@@ -182,7 +191,7 @@ export async function loginUser(req: Request, res: Response) {
 }
 
 export async function generateRefreshAndAccessTokens(
-  req: Request,
+  req: IAuthRequest,
   res: Response,
 ) {
   // get refrsh token from cookies
@@ -219,8 +228,8 @@ export async function generateRefreshAndAccessTokens(
 
     // access toekn payload
     const accessTokenPayload = {
-      userId: user.id as string,
-      email: user.email as string,
+      userId: user._id,
+      email: user.email,
     };
 
     // Generate a brand new pair
@@ -254,7 +263,7 @@ export async function generateRefreshAndAccessTokens(
   }
 }
 
-export async function logoutUser(req: Request, res: Response) {
+export async function logoutUser(req: IAuthRequest, res: Response) {
   // check refresh token
   const incomingRefreshToken = req.cookies.refreshToken;
   // if invalid refresh token

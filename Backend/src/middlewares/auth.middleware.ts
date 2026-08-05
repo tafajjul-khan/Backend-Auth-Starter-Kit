@@ -1,17 +1,17 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { IAccessTokenPayload } from "../interfaces/user.interfaces.ts";
+import { IAccessTokenPayload , IAccountRequest} from "../interfaces/user.interfaces.ts";
 
 // const ACCESS_TOKEN_SECRET =
 const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET as string;
 
 // Extend Express Request interface to include user information
-export interface AuthenticatedRequest extends Request {
-  user?: IAccessTokenPayload;
-}
+// export interface IAuthenticatedRequest extends Request {
+//   user?: IAccessTokenPayload;
+// }
 
 export const validateAccessToken = (
-  req: AuthenticatedRequest,
+  req: IAccountRequest,
   res: Response,
   next: NextFunction,
 ): void => {
@@ -33,7 +33,7 @@ export const validateAccessToken = (
       token as string,
       ACCESS_TOKEN_SECRET,
     ) as IAccessTokenPayload;
-    req.user = { id: decode.id, email: decode.email };
+    req.user = { userId: decode.userId, email: decode.email };
     next();
   } catch (error) {
     // JWT Expiration handler

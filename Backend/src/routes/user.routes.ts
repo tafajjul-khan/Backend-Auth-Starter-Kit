@@ -7,4 +7,4 @@ export const userRouter: Router = express.Router();
 userRouter.post("/create-profile", validateAccessToken, SaveOrUpdateProfile);
 userRouter.get("/all", validateAccessToken, getAllProfile);
 userRouter.post("/update-profile", validateAccessToken, SaveOrUpdateProfile);
-userRouter.delete("/:id", deleteProfile);
+userRouter.delete("/:userId",validateAccessToken, deleteProfile);

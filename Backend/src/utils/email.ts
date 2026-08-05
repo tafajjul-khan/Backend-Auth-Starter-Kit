@@ -14,7 +14,7 @@ export const sendVerificationEmail = async (email: string, token: string): Promi
 
   // console.log(token)
   // Frontend URL jahan query param me token receive hoga
-  const verificationUrl = `${'http://localhost:3000'}/api/user/verify-email?token=${token}`;
+  const verificationUrl = `${'http://localhost:3000'}/api/auth/verify-email?token=${token}`;
   // console.log(verificationUrl)
 
   await transporter.sendMail({

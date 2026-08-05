@@ -2,13 +2,12 @@ import mongoose, { Model, model, Schema, Types, Document } from "mongoose";
 import {
   IUser,
   IRefreshToken,
-  IUserMethods,
+  IUserDocument,
 } from "../interfaces/user.interfaces.ts";
 import bcrypt from "bcrypt";
 
-type UserDocument = Document & IUser & IUserMethods;
-
-const userSchema = new Schema<IUser, {}, IUserMethods>(
+// userschema to save user realted data in mongodb database (it completed by mongoose orm)
+const userSchema = new Schema<IUserDocument>(
   {
     userName: {
       type: String,
@@ -32,20 +31,23 @@ const userSchema = new Schema<IUser, {}, IUserMethods>(
       type: Boolean,
       default: false,
     },
-    profile: {
-      firstName: {
-        type: String,
-        lowercase: true,
-        trim: true,
-        default: " ",
+    // in docuement one to one reltionship good for user related task
+    account: {
+      fullName: {
+        firstName: {
+          type: String,
+          lowercase: true,
+          trim: true,
+          default: " ",
+        },
+        lastName: {
+          type: String,
+          lowercase: true,
+          trim: true,
+          default: " ",
+        },
       },
-      lastName: {
-        type: String,
-        lowercase: true,
-        trim: true,
-        default: " ",
-      },
-      dateOfBirth: {
+      DOB: {
         type: Date,
       },
       avatar: {
@@ -57,9 +59,12 @@ const userSchema = new Schema<IUser, {}, IUserMethods>(
       },
     },
   },
-  { timestamps: true },
+  {
+    timestamps: true,
+  },
 );
 
+// one to one realtionship with new document like user - refreshToken
 const refreshTokenSchema = new Schema<IRefreshToken>({
   token: { type: String, requierd: true, unique: true },
   userId: { type: Schema.Types.ObjectId, ref: "User", requierd: true },
@@ -68,7 +73,8 @@ const refreshTokenSchema = new Schema<IRefreshToken>({
 
 refreshTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
-userSchema.pre("save", async function (this: UserDocument) {
+// pre save hook that hash password before save it in db it completed by mongoose
+userSchema.pre("save", async function (this: IUserDocument) {
   if (!this.isModified("password")) {
     return;
   }
@@ -81,8 +87,9 @@ userSchema.pre("save", async function (this: UserDocument) {
   }
 });
 
+// user schema method to compare hash password with incoming password completed by bcrypt
 userSchema.methods.comparePassword = async function (
-  this: UserDocument,
+  this: IUserDocument,
   candidatePassword: string,
 ): Promise<boolean> {
   if (!this.password) {
@@ -92,11 +99,10 @@ userSchema.methods.comparePassword = async function (
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-export const User = model<IUser, Model<IUser, {}, IUserMethods>>(
-  "User",
-  userSchema,
-);
+// export User model
+export const User = model<IUserDocument>("User", userSchema);
 
+// export refreshToken model
 export const RefreshToken = model<IRefreshToken>(
   "RefreshToken",
   refreshTokenSchema,
