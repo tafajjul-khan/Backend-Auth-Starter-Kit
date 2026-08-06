@@ -1,6 +1,5 @@
 import mongoose, { Model, model, Schema, Types, Document } from "mongoose";
 import {
-  IUser,
   IRefreshToken,
   IUserDocument,
 } from "../interfaces/user.interfaces.ts";
@@ -52,10 +51,11 @@ const userSchema = new Schema<IUserDocument>(
       },
       avatar: {
         type: String,
-        default: "default-avatar.png",
+        default:null,
       },
       cloudinaryPublicId: {
         type: String,
+        default:null
       },
     },
   },

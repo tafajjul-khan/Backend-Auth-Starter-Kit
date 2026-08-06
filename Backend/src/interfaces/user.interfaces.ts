@@ -7,8 +7,8 @@ interface IAccount {
   // dob is derived atribute to count user age
   DOB: Date | null;
   bio: string;
-  avatar: string;
-  cloudinaryPublicId: string;
+  avatar: string | null;
+  cloudinaryPublicId: string | null;
 }
 //  composite atribute
 interface INameDetails {

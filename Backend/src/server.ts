@@ -1,11 +1,10 @@
-import dotenv from "dotenv"
+import "./config/loadEnv.ts"
 import cookieparser from "cookie-parser"
 import express, { Request, Response, Application } from "express";
 import { connectDB } from "./config/connecDB.ts";
 import { authRouter } from "./routes/auth.routes.ts";
 import { userRouter } from "./routes/user.routes.ts";
 
-dotenv.config()
 
 const port: number = 3000;
 const app: Application = express();
