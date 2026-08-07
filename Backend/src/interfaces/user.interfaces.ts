@@ -52,7 +52,7 @@ export interface IEmailTokenPayload extends JwtPayload {
 // custom auth request used in auth related controllers
 export interface IAuthRequest extends Request {
   params: {
-    id: string;
+    userId: string;
   };
   cookies: {
     refreshToken: string;
@@ -72,7 +72,6 @@ export interface IAuthRequest extends Request {
   };
 }
 
-
 // custom account request used in account related controllers
 export interface IAccountRequest extends Request {
   params: {
@@ -89,5 +88,3 @@ export interface IAccountRequest extends Request {
     avatar?: string;
   };
 }
-
-

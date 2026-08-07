@@ -1,9 +1,9 @@
 import multer, { StorageEngine } from "multer";
-import { Request } from "express";
+import { NextFunction, Request, Response } from "express";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
-
+import { AppError } from "../utils/appError.ts";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -35,10 +35,31 @@ const fileFilter = (
   }
 };
 
-export const upload = multer({
+const multerUpload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
     fileSize: 5 * 1024 * 1024, // 5 mb
   },
 });
+
+export const uploadSingleImage = (fieldName: string) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    multerUpload.single(fieldName)(req, res, (err: any) => {
+      if (err) {
+        if (
+          err instanceof multer.MulterError &&
+          err.code === "LIMIT_FILE_SIZE"
+        ) {
+          return next(
+            new AppError(400, "File is too large. Maximum size allowed is 5MB"),
+          );
+        }
+
+        return next(new AppError(400, err.message || "File upload failed"));
+      }
+
+      next();
+    });
+  };
+};

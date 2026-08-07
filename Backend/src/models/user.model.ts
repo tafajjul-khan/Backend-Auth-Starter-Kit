@@ -1,8 +1,5 @@
 import mongoose, { Model, model, Schema, Types, Document } from "mongoose";
-import {
-  IRefreshToken,
-  IUserDocument,
-} from "../interfaces/user.interfaces.ts";
+import { IRefreshToken, IUserDocument } from "../interfaces/user.interfaces.ts";
 import bcrypt from "bcrypt";
 
 // userschema to save user realted data in mongodb database (it completed by mongoose orm)
@@ -51,11 +48,11 @@ const userSchema = new Schema<IUserDocument>(
       },
       avatar: {
         type: String,
-        default:null,
+        default: null,
       },
       cloudinaryPublicId: {
         type: String,
-        default:null
+        default: null,
       },
     },
   },
@@ -82,7 +79,7 @@ userSchema.pre("save", async function (this: IUserDocument) {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password!, salt);
   } catch (error) {
-    console.log("error while save password", error);
+    console.log("error while save password in mognodb", error);
     throw error;
   }
 });

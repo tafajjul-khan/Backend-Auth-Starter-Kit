@@ -1,21 +1,22 @@
-import "./config/loadEnv.ts"
-import cookieparser from "cookie-parser"
+import "./config/loadEnv.ts";
+import cookieparser from "cookie-parser";
 import express, { Request, Response, Application } from "express";
 import { connectDB } from "./config/connecDB.ts";
 import { authRouter } from "./routes/auth.routes.ts";
 import { userRouter } from "./routes/user.routes.ts";
-
+import { globalErrorHandler } from "./middlewares/errorHandler.middleware.ts";
 
 const port: number = 3000;
 const app: Application = express();
 app.use(express.json());
-app.use(express.urlencoded({extended: true}))
-app.use(cookieparser())
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieparser());
 
 // api endpoints
-app.use("/api/auth", authRouter)
-app.use("/api/user", userRouter)
+app.use("/api/auth", authRouter);
+app.use("/api/user", userRouter);
 
+app.use(globalErrorHandler);
 // testing endpoint
 app.get("/", (req: Request, res: Response) => {
   res.status(200).json({
@@ -32,9 +33,8 @@ const startServer = async function () {
       console.log(`application listning on http://localhost:${port}`);
     });
   } catch (error) {
-    console.log(error)
+    console.log(error);
   }
 };
 
-startServer()
-
+startServer();
