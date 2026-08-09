@@ -8,11 +8,13 @@ import { connectDB } from "./config/connecDB.ts";
 import { authRouter } from "./routes/auth.routes.ts";
 import { userRouter } from "./routes/user.routes.ts";
 import { globalErrorHandler } from "./middlewares/errorHandler.middleware.ts";
+import morganMiddleware from "./middlewares/morgan.middleware.ts";
 
 const port: number = 3000;
 const app: Application = express();
 app.use(cors({ origin: "http://127.0.0.1:5500", credentials: true }));
 app.use(express.json());
+app.use(morganMiddleware);
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieparser());
 
@@ -38,7 +40,7 @@ const startServer = async function () {
     app.listen(port, () => {
       console.log(`application listning on http://localhost:${port}`);
       console.log(`📝 Swagger UI: http://localhost:${port}/docs`);
-      generateOpenApiJson()
+      generateOpenApiJson();
     });
   } catch (error) {
     console.log(error);

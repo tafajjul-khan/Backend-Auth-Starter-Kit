@@ -22,7 +22,7 @@ export class ApiResponse<T = any> {
       value,
       options: {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production" || true,
+        secure: process.env.NODE_ENV === "production" || false,
         sameSite: "strict",
         maxAge: 7 * 24 * 60 * 60 * 1000,
         ...options,

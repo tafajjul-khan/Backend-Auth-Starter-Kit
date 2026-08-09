@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Auth System</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 420px;
+      margin: 40px auto;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    .tabs {
+      display: flex;
+      margin-bottom: 20px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 10px;
+      cursor: pointer;
+      border: none;
+      background: #eee;
+    }
+    .tab-btn.active {
+      background: #007bff;
+      color: white;
+    }
+    .form-group {
+      margin-bottom: 12px;
+    }
+    label {
+      display: block;
+      margin-bottom: 4px;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+    }
+    button.submit-btn {
+      width: 100%;
+      padding: 10px;
+      background: #28a745;
+      color: white;
+      border: none;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    button.logout-btn {
+      width: 100%;
+      padding: 10px;
+      background: #dc3545;
+      color: white;
+      border: none;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+    button.logout-btn:hover {
+      background: #bd2130;
+    }
+    #message {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 4px;
+      display: none;
+    }
+    .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <!-- AUTH SECTION (Show when logged out) -->
+  <div id="authSection">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('login')">Login</button>
+      <button class="tab-btn" onclick="switchTab('register')">Register</button>
+    </div>
+
+    <!-- Login Form -->
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="loginUser">Username</label>
+        <input type="text" id="loginUser" required>
+      </div>
+      <div class="form-group">
+        <label for="loginEmail">Email</label>
+        <input type="email" id="loginEmail" required>
+      </div>
+      <div class="form-group">
+        <label for="loginPass">Password</label>
+        <input type="password" id="loginPass" required>
+      </div>
+      <button type="submit" class="submit-btn">Login</button>
+    </form>
+
+    <!-- Register Form -->
+    <form id="registerForm" class="hidden">
+      <div class="form-group">
+        <label for="regUser">Username</label>
+        <input type="text" id="regUser" required>
+      </div>
+      <div class="form-group">
+        <label for="regEmail">Email</label>
+        <input type="email" id="regEmail" required>
+      </div>
+      <div class="form-group">
+        <label for="regPass">Password</label>
+        <input type="password" id="regPass" required>
+      </div>
+      <button type="submit" class="submit-btn" style="background:#007bff;">Register</button>
+    </form>
+  </div>
+
+  <!-- DASHBOARD / LOGOUT SECTION (Show when logged in) -->
+  <div id="dashboardSection" class="hidden">
+    <h2>Welcome Back!</h2>
+    <p>You are logged in.</p>
+    <button id="logoutBtn" class="logout-btn">Logout</button>
+  </div>
+
+  <!-- Response Message Area -->
+  <div id="message"></div>
+
+  <script>
+    const API_BASE = "http://localhost:3000/api/auth";
+
+    // --- COOKIE FUNCTIONS ---
+    function setCookie(name, value, days = 7) {
+      const date = new Date();
+      date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+      document.cookie = `${name}=${encodeURIComponent(value)}; expires=${date.toUTCString()}; path=/; SameSite=Lax`;
+    }
+
+    // इस फ़ंक्शन का उपयोग केवल मैन्युअल रूप से सेट की गई accessToken कुकी को पढ़ने के लिए किया जाएगा
+    function getCookie(name) {
+      const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+      return match ? decodeURIComponent(match[2]) : null;
+    }
+
+    function deleteCookie(name) {
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax`;
+    }
+
+    // --- UI CONTROLS ---
+    function showMessage(text, isError = false) {
+      const msg = document.getElementById("message");
+      msg.className = isError ? "error" : "success";
+      msg.innerHTML = text;
+      msg.style.display = "block";
+    }
+
+    function switchTab(tab) {
+      document.getElementById("message").style.display = "none";
+      const loginForm = document.getElementById("loginForm");
+      const regForm = document.getElementById("registerForm");
+      const buttons = document.querySelectorAll(".tab-btn");
+
+      if (tab === 'login') {
+        loginForm.classList.remove("hidden");
+        regForm.classList.add("hidden");
+        buttons[0].classList.add("active");
+        buttons[1].classList.remove("active");
+      } else {
+        loginForm.classList.add("hidden");
+        regForm.classList.remove("hidden");
+        buttons[0].classList.remove("active");
+        buttons[1].classList.add("active");
+      }
+    }
+
+    // Toggle views based on accessToken in cookies
+    function checkAuthState() {
+      const token = getCookie("accessToken");
+      if (token) {
+        document.getElementById("authSection").classList.add("hidden");
+        document.getElementById("dashboardSection").classList.remove("hidden");
+      } else {
+        document.getElementById("authSection").classList.remove("hidden");
+        document.getElementById("dashboardSection").classList.add("hidden");
+      }
+    }
+
+    // --- INITIAL CHECK ---
+    // पेज लोड होने पर तुरंत लॉगिन स्टेट चेक करें
+    checkAuthState();
+
+    // --- FORM HANDLERS ---
+
+    // REGISTER
+    document.getElementById("registerForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const payload = {
+        userName: document.getElementById("regUser").value,
+        email: document.getElementById("regEmail").value,
+        password: document.getElementById("regPass").value
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          showMessage("Registration successful! Please log in.");
+          switchTab('login');
+        } else {
+          showMessage(data.message || "Registration failed.", true);
+        }
+      } catch (err) {
+        showMessage("Server connection failed.", true);
+      }
+    });
+
+    // LOGIN
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const payload = {
+        userName: document.getElementById("loginUser").value,
+        email: document.getElementById("loginEmail").value,
+        password: document.getElementById("loginPass").value
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include", // महत्वपूर्ण: HttpOnly रिफ्रेश टोकन कुकी को ऑटो-सेव करने के लिए जरूरी है
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          // JSON रिस्पॉन्स से accessToken निकालकर कुकी में स्टोर करना
+          if (data.data && data.data.accessToken) {
+            setCookie("accessToken", data.data.accessToken);
+          }
+          
+          showMessage("Login successful!");
+          checkAuthState();
+        } else {
+          showMessage(data.message || "Login failed.", true);
+        }
+      } catch (err) {
+        showMessage("Server connection failed.", true);
+      }
+    });
+
+    // LOGOUT HANDLER
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      const accessToken = getCookie("accessToken");
+
+      try {
+        const res = await fetch(`${API_BASE}/logout`, {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${accessToken}` // सुरक्षा के लिए टोकन हेडर में भेज रहे हैं
+          },
+          credentials: "include" // महत्वपूर्ण: ताकि बैकएंड ब्राउज़र से HttpOnly रिफ्रेश टोकन कुकी को हटा सके
+        });
+
+        // बैकएंड रिस्पांस के बाद फ्रंटएंड से accessToken को हटा दें और UI रीसेट करें
+        deleteCookie("accessToken");
+        checkAuthState();
+        showMessage("Logged out successfully!");
+        
+      } catch (err) {
+        // सर्वर में दिक्कत होने पर भी यूजर को फ्रंटएंड से लॉगआउट कर दें
+        deleteCookie("accessToken");
+        checkAuthState();
+        showMessage("Server error. Logged out locally.", true);
+      }
+    });
+  </script>
+</body>
+</html>

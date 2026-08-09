@@ -22,3 +22,5 @@ second : email service where you send emails for any specfic task like send veri
 third: i handle image[object/blob] storage with cloudinary , cloudinary is a media managment platform.
 
 problems i phase in this projects: data sync in dbs and document sync in db 
+
+write a explanation based on all technology that you use in this project 
