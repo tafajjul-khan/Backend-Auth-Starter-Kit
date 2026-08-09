@@ -14,7 +14,7 @@ import { UserAccountData } from "../validations/user.validations.ts";
 
 export const userRouter: Router = express.Router();
 
-// avatar routes
+
 
 /**
  * @openapi
@@ -157,7 +157,7 @@ userRouter.get("/all", getAllAccount);
  *         description: Profile data failed schema validations
  */
 userRouter.post(
-  "/create-profile",
+  "/create-account",
   validateAccessToken,
   validateData(UserAccountData),
   SaveOrUpdateAccount,

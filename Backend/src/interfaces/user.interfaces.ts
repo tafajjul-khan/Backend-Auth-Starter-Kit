@@ -4,13 +4,12 @@ import { JwtPayload } from "jsonwebtoken";
 
 interface IAccount {
   fullName: INameDetails;
-  // dob is derived atribute to count user age
   DOB: Date | null;
   bio: string;
   avatar: string | null;
   cloudinaryPublicId: string | null;
 }
-//  composite atribute
+
 interface INameDetails {
   firstName: string;
   lastName: string;
@@ -30,26 +29,22 @@ export interface IUserDocument extends IUser, Document {
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
-// refresh token payload to generate refresh token long lived
 export interface IRefreshToken extends Document {
   token: string;
   userId: Types.ObjectId;
   expiresAt: Date;
 }
 
-// access token payload to generate access token short lived
 export interface IAccessTokenPayload extends JwtPayload {
   userId: Types.ObjectId;
   email: string;
 }
 
-// token payload to generate token for email that send with targeted user email's
 export interface IEmailTokenPayload extends JwtPayload {
   userId: string;
   email: string;
 }
 
-// custom auth request used in auth related controllers
 export interface IAuthRequest extends Request {
   params: {
     userId: string;
@@ -72,7 +67,6 @@ export interface IAuthRequest extends Request {
   };
 }
 
-// custom account request used in account related controllers
 export interface IAccountRequest extends Request {
   params: {
     userId: string;
@@ -87,4 +81,8 @@ export interface IAccountRequest extends Request {
     DOB?: Date;
     avatar?: string;
   };
+}
+
+export interface IAuthenticatedRequest extends Request {
+  user?: IAccessTokenPayload;
 }

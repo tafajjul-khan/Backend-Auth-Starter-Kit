@@ -30,8 +30,6 @@ export class ApiResponse<T = any> {
     };
     return this;
   }
-
-  // helper method to not write every time re.status and res.json
   public send(res: any) {
     if (this.cookieOptions) {
       res.cookie(
@@ -43,7 +41,7 @@ export class ApiResponse<T = any> {
     return res.status(this.statusCode).json({
       success: this.success,
       message: this.message,
-      ...(this.data && { data: this.data }), //if data then send data else hide data
+      ...(this.data && { data: this.data }),
     });
   }
 }

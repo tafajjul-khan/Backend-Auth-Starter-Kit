@@ -15,6 +15,7 @@ export async function uploadImage(
     );
   }
 }
+
 export async function deleteImage(
   publicId: string,
 ): Promise<{ result: string }> {
@@ -28,6 +29,7 @@ export async function deleteImage(
     throw new Error(`Deletion Failed: ${(error as Error).message}`);
   }
 }
+
 export async function updateImage(
   oldPublicId: string,
   newFilePath: string,

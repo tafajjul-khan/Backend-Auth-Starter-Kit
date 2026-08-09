@@ -1,6 +1,7 @@
 import swaggerJsdoc from "swagger-jsdoc";
 import fs from "fs";
 import path from "path";
+import Logger from "../utils/logger.ts";
 
 const swaggerOptions: swaggerJsdoc.Options = {
   definition: {
@@ -43,8 +44,8 @@ export const generateOpenApiJson = () => {
   try {
     const outputPath = path.resolve(process.cwd(), "openapi.json"); 
     fs.writeFileSync(outputPath, JSON.stringify(swaggerDocs, null, 2), "utf8");
-    console.log(`\x1b[32m✨ Success: OpenAPI JSON file generated at: ${outputPath}\x1b[0m`);
+    Logger.info(`\x1b[Success: OpenAPI JSON file generated at: ${outputPath}\x1b[0m`);
   } catch (error) {
-    console.error("\x1b[31m❌ Error creating OpenAPI file:\x1b[0m", error);
+    Logger.warn("\x1b[Error creating OpenAPI file:\x1b[0m", error);
   }
 };

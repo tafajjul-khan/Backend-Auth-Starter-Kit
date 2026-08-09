@@ -4,10 +4,12 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 import { AppError } from "../utils/appError.ts";
+
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// get request from req
+
 const storage: StorageEngine = multer.diskStorage({
   destination: (req: Request, file: Express.Multer.File, cb) => {
     const uploadPath = path.join(__dirname, "..", "..", "temp", "my-upload");
