@@ -1,13 +1,12 @@
 {
-  "name": "backend",
+  "name": "auth-backend-starter-kit",
   "version": "1.0.0",
   "description": "",
   "main": "server.js",
   "scripts": {
     "dev": "tsx watch -r dotenv/config src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node dist/server.js"
   },
   "keywords": [],
   "author": "",

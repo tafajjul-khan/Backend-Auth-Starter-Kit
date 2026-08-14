@@ -24,3 +24,5 @@ third: i handle image[object/blob] storage with cloudinary , cloudinary is a med
 problems i phase in this projects: data sync in dbs and document sync in db 
 
 write a explanation based on all technology that you use in this project 
+
+req => routes => middlewares => validation => controller => model => then return response 
