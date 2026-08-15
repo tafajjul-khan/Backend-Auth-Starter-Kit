@@ -7,7 +7,7 @@
   },
   "servers": [
     {
-      "url": "http://localhost:3000/api",
+      "url": "http://localhost:3000",
       "description": "Local Development Server"
     }
   ],
@@ -35,14 +35,14 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "name",
+                  "userName",
                   "email",
                   "password"
                 ],
                 "properties": {
-                  "name": {
+                  "userName": {
                     "type": "string",
-                    "example": "Rahul Kumar"
+                    "example": "Rahul123"
                   },
                   "email": {
                     "type": "string",
@@ -144,21 +144,34 @@
     },
     "/email-verification": {
       "post": {
-        "summary": "Request an email verification link",
+        "summary": "verify user email",
         "tags": [
           "Authentication"
         ],
-        "security": [
-          {
-            "bearerAuth": []
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": "-email",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "userexample@email.com"
+                  }
+                }
+              }
+            }
           }
-        ],
+        },
         "responses": {
-          "200": {
-            "description": "Verification email sent successfully"
+          "201": {
+            "description": "User email verify successfully"
           },
-          "401": {
-            "description": "Unauthorized. Missing or invalid access token."
+          "400": {
+            "description": "Invalid user email"
           }
         }
       }
@@ -343,21 +356,22 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "bio",
-                  "phoneNumber"
+                  "firstName",
+                  "lastName",
+                  "DOB"
                 ],
                 "properties": {
-                  "bio": {
+                  "firstName": {
                     "type": "string",
-                    "example": "Full Stack Developer passionate about OpenAPI"
+                    "example": "Rahul"
                   },
-                  "phoneNumber": {
+                  "lastName": {
                     "type": "string",
-                    "example": "+1234567890"
+                    "example": "Sharma"
                   },
-                  "website": {
-                    "type": "string",
-                    "example": "https://myportfolio.com"
+                  "DOB": {
+                    "type": "Date",
+                    "example": "2004-02-04"
                   }
                 }
               }
@@ -366,7 +380,7 @@
         },
         "responses": {
           "200": {
-            "description": "Profile successfully saved or updated"
+            "description": "Profile Details successfully saved or updated"
           },
           "400": {
             "description": "Profile data failed schema validations"

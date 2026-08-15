@@ -9,7 +9,10 @@ import {
 } from "../controller/auth.controller.ts";
 import { validateAccessToken } from "../middlewares/auth.middleware.ts";
 import { validateData } from "../middlewares/validate.middleware.ts";
-import { LoginUserSchema, RegisterUserSchema } from "../validations/auth.validations.ts";
+import {
+  LoginUserSchema,
+  RegisterUserSchema,
+} from "../validations/auth.validations.ts";
 
 export const authRouter: Router = express.Router();
 
@@ -26,13 +29,13 @@ export const authRouter: Router = express.Router();
  *           schema:
  *             type: object
  *             required:
- *               - name
+ *               - userName
  *               - email
  *               - password
  *             properties:
- *               name:
+ *               userName:
  *                 type: string
- *                 example: Rahul Kumar
+ *                 example: Rahul123
  *               email:
  *                 type: string
  *                 format: email
@@ -113,15 +116,26 @@ authRouter.post("/logout", logoutUser);
  * @openapi
  * /email-verification:
  *   post:
- *     summary: Request an email verification link
+ *     summary: verify user email
  *     tags: [Authentication]
- *     security:
- *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               -email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: userexample@email.com
  *     responses:
- *       200:
- *         description: Verification email sent successfully
- *       401:
- *         description: Unauthorized. Missing or invalid access token.
+ *       201:
+ *         description: User email verify successfully
+ *       400:
+ *         description: Invalid user email
  */
 authRouter.post(
   "/email-verification",

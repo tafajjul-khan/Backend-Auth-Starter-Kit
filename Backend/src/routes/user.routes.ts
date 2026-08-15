@@ -136,21 +136,22 @@ userRouter.get("/all", getAllAccount);
  *           schema:
  *             type: object
  *             required:
- *               - bio
- *               - phoneNumber
+ *               - firstName
+ *               - lastName
+ *               - DOB
  *             properties:
- *               bio:
+ *               firstName:
  *                 type: string
- *                 example: Full Stack Developer passionate about OpenAPI
- *               phoneNumber:
+ *                 example: Rahul
+ *               lastName:
  *                 type: string
- *                 example: "+1234567890"
- *               website:
- *                 type: string
- *                 example: https://myportfolio.com
+ *                 example: Sharma
+ *               DOB:
+ *                 type: Date
+ *                 example: 2004-02-04
  *     responses:
  *       200:
- *         description: Profile successfully saved or updated
+ *         description: Profile Details successfully saved or updated
  *       401:
  *         description: Unauthorized. Missing or invalid access token.
  *       400:

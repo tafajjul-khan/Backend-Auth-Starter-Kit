@@ -122,17 +122,15 @@ export const registerUser = asyncHandler<IAuthRequest>(async (req) => {
 export const loginUser = asyncHandler<IAuthRequest>(async (req) => {
   Logger.info("User login start...");
 
-  const { email, userName, password } = req.body;
+  const { email, password } = req.body;
 
-  if (!email || !userName || !password) {
+  if (!email || !password) {
     Logger.warn("User not provide credentials");
     throw new AppError(401, "Email or Username and password requierd");
   }
 
   Logger.info("User find in db");
-  const user = await User.findOne({
-    $or: [{ email: email }, { userName: userName }],
-  });
+  const user = await User.findOne({ email: email });
 
   if (!user) {
     Logger.warn("User not found in db");

@@ -1,8 +1,6 @@
 import { connectDB } from "./config/connecDB.ts";
 import { generateOpenApiJson } from "./config/swagger.config.ts";
-import { app } from "./app.ts";
-
-const PORT = process.env.PORT || 3000;
+import { app , PORT} from "./app.ts";
 
 const startServer = async function () {
   await connectDB();
